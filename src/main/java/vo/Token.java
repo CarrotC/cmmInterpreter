@@ -1,6 +1,7 @@
 package vo;
 
 public class Token {
+//    private String name;
     private int type;
     private String strValue;
     private int line;
@@ -46,7 +47,13 @@ public class Token {
         this.column = column;
     }
 
-
+//    public String getName() {
+//        return name;
+//    }
+//
+//    public void setName(String name) {
+//        this.name = name;
+//    }
 
     public static final int IF = 0;//保留字if
 
@@ -101,6 +108,63 @@ public class Token {
     public static final int END_SIGN = 25;//结束符号#
 
 
+//    public void setNameByType(){
+//        switch (this.getType()){
+//            case IF:
+//                this.setName("if");
+//            case WHILE:
+//                this.setName("while");
+//            case READ:
+//                this.setName("if");
+//            case WRITE:
+//                this.setName("if");
+//            case INT:
+//                this.setName("if");
+//            case REAL:
+//                this.setName("if");
+//            case ELSE:
+//                this.setName("if");
+//            case IDENTIFIER:
+//                this.setName("if");
+//            case IF:
+//                this.setName("if");
+//            case IF:
+//                this.setName("if");
+//            case IF:
+//                this.setName("if");
+//            case IF:
+//                this.setName("if");
+//            case IF:
+//                this.setName("if");
+//            case IF:
+//                this.setName("if");
+//            case IF:
+//                this.setName("if");
+//            case IF:
+//                this.setName("if");
+//            case IF:
+//                this.setName("if");
+//            case IF:
+//                this.setName("if");
+//            case IF:
+//                this.setName("if");
+//            case IF:
+//                this.setName("if");
+//            case IF:
+//                this.setName("if");
+//            case IF:
+//                this.setName("if");
+//            case IF:
+//                this.setName("if");
+//            case IF:
+//                this.setName("if");
+//            case IF:
+//                this.setName("if");
+//            case IF:
+//                this.setName("if");
+//
+//        }
+//    }
 
 
 
