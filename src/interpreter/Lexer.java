@@ -34,11 +34,11 @@ public class Lexer {
     };
     //运算符号
     private Character[] operators = new Character[]{
-            '+', '-', '*', '/', '='
+            '+', '-', '*', '/', '=', '<', '>'
     };
     //分隔符号
     private Character[] seperators = new Character[]{
-            '<', '>', '(', ')', '[', ']', '{', '}', ';', ','
+             '(', ')', '[', ']', '{', '}', ';'
     };
 
     //构造函数初始化源程序码
@@ -54,6 +54,7 @@ public class Lexer {
         Character after = null;//后一字符
         int column = 0;//当前读取的字符位置
         int state = 0;//初始状态
+//        boolean isNavigative = false;
 
         int length = str.length();//此行字符串的长度
         String numStr = "";
@@ -88,16 +89,86 @@ public class Lexer {
                             state = 3;
                             isComment = true;
                         }
-                        else {
-                            token = new Token("operator", c.toString(), line, column + 1);
+                        else if(c == '-' && Character.isDigit(after) && !Character.isDigit(before) && !Character.isLetter(before)){//‘-’作为负号的情况
+                            begin = column;
+                            state = 1;
+                        }
+                        else if(c == '=' && after == '='){//"=="等于符号
+                            token = new Token(Token.EQUALITY_SIGN, "==", line, column + 1);
                             tokenList.add(token);
-                            state = 0;
+                            column++;
+                        }
+                        else if(c == '<' && after == '>'){//"<>"不等符号
+                            token = new Token(Token.INEQUALITY_SIGN, "<>", line, column + 1);
+                            tokenList.add(token);
+                            column++;
+                        }
+                        else {
+                            switch (c){
+                                case '+':
+                                    token = new Token(Token.ADD, c.toString(), line, column + 1);
+                                    tokenList.add(token);
+                                    break;
+                                case '-':
+                                    token = new Token(Token.MINUS, c.toString(), line, column + 1);
+                                    tokenList.add(token);
+                                    break;
+                                case '*':
+                                    token = new Token(Token.MULTIPLY, c.toString(), line, column + 1);
+                                    tokenList.add(token);
+                                    break;
+                                case '/':
+                                    token = new Token(Token.DIVIDE, c.toString(), line, column + 1);
+                                    tokenList.add(token);
+                                    break;
+                                case '=':
+                                    token = new Token(Token.EQUALITY_SIGN, c.toString(), line, column + 1);
+                                    tokenList.add(token);
+                                    break;
+                                case '<':
+                                    token = new Token(Token.LESS_THAN, c.toString(), line, column + 1);
+                                    tokenList.add(token);
+                                    break;
+                                default:
+                                    errorInfo += "error: line" + line + "," + " column" + (column + 1) + ": "+ c.toString() +"使用错误\n";
+                                    state = 0;
+                            }
                         }
                     }
                     else if(isCharInArray(c, seperators)){//分隔符
-                        token = new Token("seperator", c.toString(), line, column + 1);
-                        tokenList.add(token);
-                        state = 0;
+                        switch (c) {
+                            case '(':
+                                token = new Token(Token.LEFT_PARENTHESE, c.toString(), line, column + 1);
+                                tokenList.add(token);
+                                break;
+                            case ')':
+                                token = new Token(Token.RIGHT_PARENTHESE, c.toString(), line, column + 1);
+                                tokenList.add(token);
+                                break;
+                            case '[':
+                                token = new Token(Token.LEFT_BRACKET, c.toString(), line, column + 1);
+                                tokenList.add(token);
+                                break;
+                            case ']':
+                                token = new Token(Token.RIGHT_BRACKET, c.toString(), line, column + 1);
+                                tokenList.add(token);
+                                break;
+                            case '{':
+                                token = new Token(Token.LEFT_BRACE, c.toString(), line, column + 1);
+                                tokenList.add(token);
+                                break;
+                            case '}':
+                                token = new Token(Token.RIGHT_BRACE, c.toString(), line, column + 1);
+                                tokenList.add(token);
+                                break;
+                            case ';':
+                                token = new Token(Token.SEMICOLON, c.toString(), line, column + 1);
+                                tokenList.add(token);
+                                break;
+                            default:
+                                errorInfo += "error: line" + line + "," + " column" + (column + 1) + ": " + c.toString() + "使用错误\n";
+                                state = 0;
+                        }
                     }
                     else if (c == '.'){
                         errorInfo += "error: line" + line + "," + " column" + (column + 1) + ": '.'使用错误\n";
@@ -136,9 +207,9 @@ public class Lexer {
                         if(column == length -1){
                             numStr = str.substring(begin);
                             if(numStr.contains(".")){
-                                token = new Token("real", numStr, line, begin + 1);
+                                token = new Token(Token.REAL_NUM, numStr, line, begin + 1);
                             }else {
-                                token = new Token("int", numStr, line, begin + 1);
+                                token = new Token(Token.INT_NUM, numStr, line, begin + 1);
                             }
                         }else {
                             state = 1;
@@ -165,10 +236,10 @@ public class Lexer {
                         }else {
                             numStr = str.substring(begin, column);
                             if(numStr.contains(".")){
-                                token = new Token("real", numStr, line, begin + 1);
+                                token = new Token(Token.REAL_NUM, numStr, line, begin + 1);
                                 tokenList.add(token);
                             }else {
-                                token = new Token("int", numStr, line, begin + 1);
+                                token = new Token(Token.INT_NUM, numStr, line, begin + 1);
                                 tokenList.add(token);
                             }
                             column--;
@@ -181,11 +252,10 @@ public class Lexer {
                         if(column == length - 1){
                             wordStr = str.substring(begin, column + 1);
                             if(isStrInArray(wordStr, reservedWords)){
-                                token = new Token("reservedWord", wordStr, line, begin + 1);
-                                tokenList.add(token);
+                                addReservedWord2TokenList(wordStr, line, begin);
                                 state = 0;
                             }else {
-                                token = new Token("identifier", wordStr, line, begin + 1);
+                                token = new Token(Token.IDENTIFIER, wordStr, line, begin + 1);
                                 tokenList.add(token);
                                 state = 0;
                             }
@@ -203,11 +273,10 @@ public class Lexer {
                     else {
                         wordStr = str.substring(begin, column);
                         if(isStrInArray(wordStr, reservedWords)){
-                            token = new Token("reservedWord", wordStr, line, begin + 1);
-                            tokenList.add(token);
+                            addReservedWord2TokenList(wordStr, line, begin);
                             state = 0;
                         }else {
-                            token = new Token("identifier", wordStr, line, begin + 1);
+                            token = new Token(Token.IDENTIFIER, wordStr, line, begin + 1);
                             tokenList.add(token);
                             state = 0;
                         }
@@ -272,6 +341,40 @@ public class Lexer {
         }
         return false;
     }
+
+    //向TokenList中添加保留字
+    public void addReservedWord2TokenList(String wordStr, int line, int begin){
+        Token token;
+        if(wordStr.equals("if")){
+            token = new Token(Token.IF, wordStr, line, begin + 1);
+            tokenList.add(token);
+        }
+        else if(wordStr.equals("else")){
+            token = new Token(Token.ELSE, wordStr, line, begin + 1);
+            tokenList.add(token);
+        }
+        else if(wordStr.equals("while")){
+            token = new Token(Token.WHILE, wordStr, line, begin + 1);
+            tokenList.add(token);
+        }
+        else if(wordStr.equals("read")){
+            token = new Token(Token.READ, wordStr, line, begin + 1);
+            tokenList.add(token);
+        }
+        else if(wordStr.equals("write")){
+            token = new Token(Token.WRITE, wordStr, line, begin + 1);
+            tokenList.add(token);
+        }
+        else if(wordStr.equals("int")){
+            token = new Token(Token.INT, wordStr, line, begin + 1);
+            tokenList.add(token);
+        }
+        else if(wordStr.equals("real")){
+            token = new Token(Token.REAL, wordStr, line, begin + 1);
+            tokenList.add(token);
+        }
+    }
+
 
 }
 

@@ -1,0 +1,11 @@
+int _a = 3.;
+int 	1b = 4	;
+real c=3.52;
+int[]f;
+//¹þ¹þ
+/*
+while(a<=b){
+a=a+1;
+hhh_
+12ghe;
+} 
