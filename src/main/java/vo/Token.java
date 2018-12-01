@@ -67,9 +67,9 @@ public class Token {
 
     public static final int REAL = 5;//保留字real
 
-    public static final int ELSE = 6;//保留字else
+    public static final int IDENTIFIER = 6;//标识符
 
-    public static final int IDENTIFIER = 7;//标识符
+    public static final int ELSE = 7;//保留字else
 
     public static final int INT_NUM = 8;//int类型数字（整数）
 

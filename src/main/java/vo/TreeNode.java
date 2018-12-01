@@ -6,11 +6,12 @@ import java.util.ArrayList;
 
 public class TreeNode {
     private TreeNode parentNode;//父节点
+    private ArrayList<TreeNode> children;//孩子节点
     private int type;//节点类型
-    private Token value;//非终结符树节点的值
+    private Token value;//终结符树节点的值
+
     private String callName;
     private String json;
-    private ArrayList<TreeNode> children;//孩子节点
 
 
     public TreeNode(int type, TreeNode parentNode, String name){
@@ -86,23 +87,23 @@ public class TreeNode {
 
     public static final int IF_STMT = 3;//if语句
 
-    public static final int ELSE_STMT = 4;//else语句
+    public static final int WHILE_STMT = 4;//while
 
-    public static final int WHILE_STMT = 5;//while
+    public static final int READ_STMT = 5;//read
 
-    public static final int READ_STMT = 6;//read
+    public static final int WRITE_STMT = 6;//write
 
-    public static final int WRITE_STMT = 7;//write
+    public static final int INT_STMT = 7;//int
 
-    public static final int INT_STMT = 8;//int
+    public static final int INT_FOLLOW = 8;//为区分int声明语句和赋值语句，构成LL(1)文法而构造。代表跟在int语句中保留字int后的部分
 
-    public static final int INT_FOLLOW = 9;//为区分int声明语句和赋值语句，构成LL(1)文法而构造。代表跟在int语句中保留字int后的部分
+    public static final int REAL_STMT = 9;//real
 
-    public static final int REAL_STMT = 10;//real
+    public static final int REAL_FOLLOW = 10;//为区分real声明语句和赋值语句，构成LL(1)文法而构造。代表跟在real语句中保留字real后的部分
 
-    public static final int REAL_FOLLOW = 11;//为区分real声明语句和赋值语句，构成LL(1)文法而构造。代表跟在real语句中保留字real后的部分
+    public static final int ASSIGN_STMT = 11;//赋值语句
 
-    public static final int ASSIGN_STMT = 12;//赋值语句
+    public static final int ELSE_STMT = 12;//else语句
 
     public static final int CONDITION = 13;//条件语句
 

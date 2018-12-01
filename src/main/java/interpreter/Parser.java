@@ -95,8 +95,8 @@ public class Parser {
     }
 
     private void parseStmtSequence(){
-        addNon_TerMinalNode(TreeNode.STMT_SEQUENCE, "stmt-sequence");
-        if(curToken.getType() >= 0 && curToken.getType() <= 7){//保留字或标识符
+        if(curToken.getType() >= 0 && curToken.getType() <= 6){//保留字或标识符
+            addNon_TerMinalNode(TreeNode.STMT_SEQUENCE, "stmt-sequence");
             parseStatement();
         }
         else if(curToken.getType() == Token.END_SIGN || curToken.getType() == Token.RIGHT_BRACE) {//# 或 }
@@ -107,6 +107,7 @@ public class Parser {
         else {
             //报错
             errorInfo += "error: line" + curToken.getLine() + "," + " column" + curToken.getColumn() + "expected: reserved word or identifier\n";
+            getNextToken();
             curNode = curNode.getParentNode();
             return;
         }
@@ -148,6 +149,8 @@ public class Parser {
     private void parseIfStmt(){
         addNon_TerMinalNode(TreeNode.IF_STMT, "if-stmt");
 
+
+
         matchToken(Token.IF);//if
         matchToken(Token.LEFT_PARENTHESE);//(
         parseCondition();//condition
@@ -161,9 +164,9 @@ public class Parser {
     }
 
     private void parseElseStmt(){
-        addNon_TerMinalNode(TreeNode.ELSE_STMT, "else-stmt");
 
         if (curToken.getType() == Token.ELSE){
+            addNon_TerMinalNode(TreeNode.ELSE_STMT, "else-stmt");
             matchToken(Token.ELSE);//else
             matchToken(Token.LEFT_BRACE);//{
             parseStmtSequence();
