@@ -5,6 +5,8 @@ import vo.SimbolTabble;
 import vo.Token;
 import vo.TreeNode;
 
+import java.util.Scanner;
+
 public class Sematics {
 
     private TreeNode programNode;
@@ -104,28 +106,116 @@ public class Sematics {
         currNode = currNode.getParentNode();//while-stmt
         level--;
     }
+
     public void analyseReadStmt(){//read variable;
-        level++;
         currNode = currNode.getChildren().get(1);//variable
-        Record var = analyseVariable(currNode.getValue());
-
+        Record var = analyseVariable();
+        if(var.equals(null)){//如果该变量没有被声明过//, currNode.getChildren().get(0): variable->idetifier arrayIndex, identifier是终结点，有token
+            String name =  currNode.getChildren().get(0).getValue().getStrValue();
+            Record record = new Record(level, null, Record.tReal,name, 0.0);
+            simbolTabble.getTable().add(record);
+        }
+        var = analyseVariable();//获取声明的变量
+        Scanner sc = new Scanner(System.in);
+        String readStr = sc.next();
+        double readRealVar = Double.parseDouble(readStr);
+        var.setRealValue(readRealVar);
+        result+= "read: " + readStr +"\n";
+        currNode = currNode.getParentNode();//read-stmt
     }
-    public void analyseWriteStmt(){
 
+    public void analyseWriteStmt(){//write factor;
+        currNode = currNode.getChildren().get(1);//factor
+        double factor2Write = analyseFactor();
+        System.out.println(factor2Write);
+        result+= "write: " + factor2Write + "\n";
+        currNode = currNode.getParentNode();
     }
-    public void analyseIntStmt(){
 
-    }
-    public void analyseRealStmt(){
+    public void analyseIntStmt(){//int variable int-follow
+        currNode = currNode.getChildren().get(1);//vaiable
+        Record var = analyseVariable();
+        if(var.equals(null)){//如果该变量未声明过
+            String name =  currNode.getChildren().get(0).getValue().getStrValue();
+            if(currNode.getChildren().size() == 1){//variable: identifier
+                var = new Record(level, currNode.getValue(), Record.tInt, name, 0);
+            }else {//数组
+                int arrayNum = Integer.parseInt(currNode.getChildren().get(1).getChildren().get(1).getValue().getStrValue());
+                var = new Record(level, currNode.getValue(), Record.tIntArray, name, new int[arrayNum]);
+            }
+            simbolTabble.getTable().add(var);
+            currNode = currNode.getParentNode();//int-stmt
+            analyseIntFollowStmt(name);
 
+        }else {
+            errorInfo += "重复声明变量：line " + currNode.getChildren().get(0).getValue().getLine()
+                    + ", column " + currNode.getChildren().get(0).getValue().getColumn()
+                    + " " + currNode.getChildren().get(0).getValue().getStrValue() + "\n";
+            currNode = currNode.getParentNode();//int-stmt
+        }
     }
-    public void analyseAssignStmt(){
 
+    public void analyseIntFollowStmt(String name){//;或=expression;
+        if(currNode.getChildren().size() <= 1){//;
+            return;
+        }else {
+            Record record = simbolTabble.getRecordByName(name);
+            if (record.getType() == Record.tIntArray){//数组
+                errorInfo += "错误的数组声明方式： line " + currNode.getChildren().get(0).getValue().getLine()
+                        + ", column " + currNode.getChildren().get(0).getValue().getColumn()
+                        + " " + record.getName() + "[" + record.getArrayNum() + "] = " + "\n";
+                return;
+            }
+            currNode = currNode.getChildren().get(1);//expression
+            int intVar = (int) analyseExpression();
+            record.setIntValue(intVar);
+            currNode = currNode.getParentNode();//intFollow
+        }
     }
-    public void analyseIntFollowStmt(){
 
+    public void analyseRealStmt(){//real variable real-follow
+        currNode = currNode.getChildren().get(1);//variable
+        Record var = analyseVariable();
+        if(var.equals(null)){//变量未被声明过
+            String name =  currNode.getChildren().get(0).getValue().getStrValue();
+            var = new Record(level, null, Record.tReal, name, 0.0);
+            simbolTabble.getTable().add(var);
+            currNode = currNode.getParentNode();//real-stmt
+            analyseRealFollowStmt(name);
+        }else {//变量已经被声明
+            errorInfo+= "重复声明变量：line " + currNode.getChildren().get(0).getValue().getLine()
+                    + ", column " + currNode.getChildren().get(0).getValue().getColumn()
+                    + " " + currNode.getChildren().get(0).getValue().getStrValue() + "\n";
+            currNode = currNode.getParentNode();//real-stmt
+        }
     }
-    public void analyseRealFollowStmt(){
+
+    public void analyseRealFollowStmt(String name){//;或=expression;
+        if(currNode.getChildren().size() > 1){//=expression;
+            currNode = currNode.getChildren().get(1);//expression
+            double realVar = analyseExpression();
+            Record record = simbolTabble.getRecordByName(name);
+            record.setRealValue(realVar);
+            currNode = currNode.getParentNode();//realFollow
+        }
+    }
+    public void analyseAssignStmt(){//variable = expression;
+        currNode = currNode.getChildren().get(0);//variable
+        Record var = analyseVariable();
+        if (var.equals(null)){//变量未声明
+            errorInfo += "未声明的变量： line " + currNode.getChildren().get(0).getValue().getLine()
+                    + ", column " + currNode.getChildren().get(0).getValue().getColumn()
+                    + " " + currNode.getChildren().get(0).getValue().getStrValue() + "\n";
+            currNode = currNode.getParentNode();//assign-stmt
+        }else {
+            if(currNode.getChildren().size() > 1){//variable: identifier arrayIndex
+                int arrayType = var.getType();
+                double exp = analyseExpression();
+                if(arrayType == Record.tIntArray){
+
+                }
+            }
+        }
 
     }
     public boolean analyseCondition(){
@@ -170,11 +260,12 @@ public class Sematics {
     public void analyseMulOp(){
 
     }
-    public void analyseFactor(){
-
+    public double analyseFactor(){
+        return 0.0;
     }
-    public Record analyseVariable(Token token){
-        return simbolTabble.getDefinedRecord(level, token);
+    public Record analyseVariable(){//identifier arrayIndex
+        currNode = currNode.getChildren().get(0);//identifier??
+        return simbolTabble.getRecordByName(currNode.getValue().getStrValue());
     }
 
 }
