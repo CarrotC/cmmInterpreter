@@ -126,6 +126,10 @@ public class InterpreterApp extends Application {
                     String result = lexer.lexicalAnalysis();
                     Parser parser = new Parser(lexer.getTokenList());
                     String parserResult = parser.grammaticalAnalysis();
+                    if (parser.getErrorInfo() != ""){
+                        resultText.setText("程序存在语法错误！请先排除！\n" + parser.getErrorInfo());
+                        return;
+                    }
 //                    System.out.print(parserResult);
                     Sematics sematics = new Sematics(parser.getProgramNode());
                     String sematicResult = sematics.sematicAnalyse();

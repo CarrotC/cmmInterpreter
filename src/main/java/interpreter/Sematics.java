@@ -15,8 +15,8 @@ public class Sematics {
     private TreeNode currNode;
     private Token currToken;
     private int level = 0;
-    private String result;
-    private String errorInfo;
+    private String result = "\n";
+    private String errorInfo = "";
 
     public Sematics(TreeNode programNode){
         this.programNode = programNode;
@@ -27,7 +27,7 @@ public class Sematics {
         currNode = programNode;
         analyseProgram();
         if (errorInfo != ""){
-            result = errorInfo + result;
+            result = "Error: \n" + errorInfo + result;
         }
         return result;
     }
@@ -53,20 +53,28 @@ public class Sematics {
         switch (currNode.getType()){
             case TreeNode.IF_STMT:
                 analyseIfStmt();
+                break;
             case TreeNode.ELSE_STMT:
                 analyseElseStmt();
+                break;
             case TreeNode.WHILE_STMT:
                 analyseWhileStmt();
+                break;
             case TreeNode.READ_STMT:
                 analyseReadStmt();
+                break;
             case TreeNode.WRITE_STMT:
                 analyseWriteStmt();
+                break;
             case TreeNode.INT_STMT:
                 analyseIntStmt();
+                break;
             case TreeNode.REAL_STMT:
                 analyseRealStmt();
+                break;
             case TreeNode.ASSIGN_STMT:
                 analyseAssignStmt();
+                break;
         }
         currNode = currNode.getParentNode();
     }
@@ -154,8 +162,9 @@ public class Sematics {
             }
             simbolTabble.getTable().add(var);
             currNode = currNode.getParentNode();//int-stmt
+            currNode = currNode.getChildren().get(2);//intFollow
             analyseIntFollowStmt(name);
-
+            currNode = currNode.getParentNode();//int-stmt
         }else {
             errorInfo += "重复声明变量：line " + currNode.getChildren().get(0).getValue().getLine()
                     + ", column " + currNode.getChildren().get(0).getValue().getColumn()
@@ -195,7 +204,9 @@ public class Sematics {
             }
             simbolTabble.getTable().add(var);
             currNode = currNode.getParentNode();//real-stmt
+            currNode = currNode.getChildren().get(2);//real-follow
             analyseRealFollowStmt(name);
+            currNode = currNode.getParentNode();
         }else {//变量已经被声明
             errorInfo+= "重复声明变量：line " + currNode.getChildren().get(0).getValue().getLine()
                     + ", column " + currNode.getChildren().get(0).getValue().getColumn()
@@ -230,7 +241,6 @@ public class Sematics {
             errorInfo += "未声明的变量： line " + currNode.getChildren().get(0).getValue().getLine()
                     + ", column " + currNode.getChildren().get(0).getValue().getColumn()
                     + " " + currNode.getChildren().get(0).getValue().getStrValue() + "\n";
-            currNode = currNode.getParentNode();//assign-stmt
         }else {
             if(currNode.getChildren().size() > 1){//variable: identifier arrayIndex
                 int arrayType = var.getType();
@@ -242,11 +252,6 @@ public class Sematics {
                     }
                 }
             }else {//variable: identifier
-                if(var.getType() == Record.tIntArray || var.getType() == Record.tRealArray){//如果为数组变量且没有数组下标
-                    errorInfo += "错误的数组赋值方式： line" + currNode.getChildren().get(0).getValue().getLine() + "\n";
-                    currNode = currNode.getParentNode();//assign-stmt
-                    return;
-                }
                 if (var.getType() == Record.tInt){
                     var.setIntValue((int) exp);
                 }else {
@@ -292,7 +297,9 @@ public class Sematics {
         exp = term;
         currNode = currNode.getParentNode();//expression
         if(currNode.getChildren().size() > 1){//and-term 不为空
+            currNode = currNode.getChildren().get(1);//and-term
             exp = analyseAddTerm(term);
+            currNode = currNode.getParentNode();
         }
         return exp;
     }
@@ -325,7 +332,9 @@ public class Sematics {
         term = factor;
         currNode = currNode.getParentNode();//term
         if(currNode.getChildren().size() > 1){//with-factor不为空
+            currNode = currNode.getChildren().get(1);//with-factor
             term = analyseWithFactor(factor);
+            currNode = currNode.getParentNode();
         }
         return term;
     }
@@ -359,7 +368,7 @@ public class Sematics {
         return currNode.getChildren().get(0).getValue().getType();
     }
     public double analyseFactor(){// (expression) 或 intNum 或 realNum 或 variable
-        double factor;
+        double factor = 0.0;
         currNode = currNode.getChildren().get(0);//第一个子节点
         if(currNode.getType() == TreeNode.TERMINAL_SYMBOL){//终结符
             currNode = currNode.getParentNode();//factor
@@ -370,16 +379,17 @@ public class Sematics {
             }else {
                 factor = Double.parseDouble(currNode.getChildren().get(0).getValue().getStrValue());
             }
-        }else {
+        }else {//var
             Record var = analyseVariable();
             if(var == null){
                 errorInfo += "未声明的变量： line " + currNode.getChildren().get(0).getValue().getLine()
-                        + " " + var.getName() + "\n";
+                        + " " + currNode.getChildren().get(0).getValue().getStrValue() + "\n";
             }else {
                 factor = var.getValue();
             }
+            currNode = currNode.getParentNode();
         }
-        return 0.0;
+        return factor;
     }
     public Record analyseVariable(){//identifier arrayIndex （注： arrayIndex可能为空）
         currNode = currNode.getChildren().get(0);//identifier
@@ -390,7 +400,7 @@ public class Sematics {
         }
         currNode = currNode.getParentNode();//variable
         if(currNode.getChildren().size() > 1){//arrayIndex不为空
-            int arrayIndex = Integer.parseInt(currNode.getChildren().get(1).getValue().getStrValue());
+            int arrayIndex = Integer.parseInt(currNode.getChildren().get(1).getChildren().get(1).getValue().getStrValue());
             if(var.getType() == Record.tIntArray || var.getType() == Record.tRealArray){
                 var.setArrayIndex(arrayIndex);
                 if(arrayIndex >= var.getArrayNum()){
@@ -402,6 +412,14 @@ public class Sematics {
                 errorInfo += "错误的变量使用方式：变量" + var.getArrayNum() + "不是数组\n";
                 return null;
             }
+        }
+        if(var.getType() == Record.tIntArray || var.getType() == Record.tRealArray){//如果为数组变量但没有数组下标
+            if(var.getArrayIndex() == null){
+                errorInfo += "错误的数组变量使用方式： line " + currNode.getChildren().get(0).getValue().getLine()
+                        + ", column " + currNode.getChildren().get(0).getValue().getColumn()
+                        + " " + currNode.getChildren().get(0).getValue().getStrValue() + "\n";
+            }
+            return null;
         }
         return var;
     }

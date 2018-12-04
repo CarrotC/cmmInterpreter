@@ -35,9 +35,9 @@ public class SimbolTabble {
 
     //清除内层的变量（在程序执行跳出一个块的时候使用）
     public void deleteInsideRecord(int level){
-        for (Record r: table){
-            if(r.getLevel() <= level){
-                table.remove(r);
+        for (int i = 0; i < table.size(); i++){
+            if (table.get(i).getLevel() >= level){
+                table.remove(i);
             }
         }
     }
@@ -46,7 +46,7 @@ public class SimbolTabble {
     public Record getRecordByName(String name){
         Record record = null;
         for (Record r: table){
-            if(r.getName() == name){//名称相同
+            if(r.getName().equals(name)){//名称相同
                 record = r;
             }
         }
