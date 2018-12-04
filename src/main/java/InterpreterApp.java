@@ -1,4 +1,5 @@
 import interpreter.Parser;
+import interpreter.Sematics;
 import javafx.application.Application;
 import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
@@ -103,7 +104,7 @@ public class InterpreterApp extends Application {
                     String result = lexer.lexicalAnalysis();
                     Parser parser = new Parser(lexer.getTokenList());
                     String parserResult = parser.grammaticalAnalysis();
-                    System.out.print(parserResult);
+//                    System.out.print(parserResult);
 
                     resultText.setText(parserResult);
                 } catch (IOException e) {
@@ -115,11 +116,24 @@ public class InterpreterApp extends Application {
         sematicBtn.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
-                Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                alert.setTitle("提示");
-                alert.setHeaderText(null);
-                alert.setContentText("功能尚在开发中……");
-                alert.showAndWait();
+                if (!hasSelectFile()){
+                    return;
+                }
+                FileHandlerImpl fileHandler = new FileHandlerImpl();
+                try {
+                    String source = fileHandler.FileToString(filePathTF.getText());
+                    Lexer lexer = new Lexer(source);
+                    String result = lexer.lexicalAnalysis();
+                    Parser parser = new Parser(lexer.getTokenList());
+                    String parserResult = parser.grammaticalAnalysis();
+//                    System.out.print(parserResult);
+                    Sematics sematics = new Sematics(parser.getProgramNode());
+                    String sematicResult = sematics.sematicAnalyse();
+                    resultText.setText(sematicResult);
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         });
 

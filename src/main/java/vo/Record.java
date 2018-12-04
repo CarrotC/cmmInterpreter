@@ -18,6 +18,7 @@ public class Record {
         this.level = level;
         this.token = token;
         this.type = type;
+        this.name = name;
         this.intValue = intValue;
     }
 
@@ -25,6 +26,7 @@ public class Record {
         this.level = level;
         this.token = token;
         this.type = type;
+        this.name = name;
         this.realValue = realValue;
     }
 
@@ -32,6 +34,7 @@ public class Record {
         this.level = level;
         this.token = token;
         this.type = type;
+        this.name = name;
         this.intArray = intArray;
         this.arrayNum = intArray.length;
     }
@@ -40,6 +43,7 @@ public class Record {
         this.level = level;
         this.token = token;
         this.type = type;
+        this.name = name;
         this.realArray = realArray;
         this.arrayNum = realArray.length;
     }

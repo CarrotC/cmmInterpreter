@@ -6,6 +6,11 @@ public class SimbolTabble {
     private ArrayList<Record> table;//普通变量表
     private ArrayList<Record> arrayTable;//数组变量表
 
+    public SimbolTabble(){
+        this.table = new ArrayList<>();
+        this.arrayTable = new ArrayList<>();
+    }
+
     //获取当前层和更外层的全部变量
 //    public ArrayList<Record> getAllValidRecord(int level){
 //        ArrayList<Record> validRecords = new ArrayList<>();

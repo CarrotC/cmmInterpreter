@@ -20,11 +20,16 @@ public class Sematics {
 
     public Sematics(TreeNode programNode){
         this.programNode = programNode;
+        this.simbolTabble = new SimbolTabble();
     }
 
-    public void sematicAnalyse(){
+    public String sematicAnalyse(){
         currNode = programNode;
         analyseProgram();
+        if (errorInfo != ""){
+            result = errorInfo + result;
+        }
+        return result;
     }
 
     public void analyseProgram(){
@@ -33,7 +38,6 @@ public class Sematics {
     }
 
     public void analyseStmtSequence(){//statement stmt-sequence
-        level++;
         currNode = currNode.getChildren().get(0);//statement
         analyseStatement();
         currNode = currNode.getParentNode();//stmt-sequence
@@ -42,10 +46,9 @@ public class Sematics {
             analyseStmtSequence();
             currNode = currNode.getParentNode();//stmtment(1)
         }
-        level--;
     }
+
     public void analyseStatement(){
-        level++;
         currNode = currNode.getChildren().get(0);
         switch (currNode.getType()){
             case TreeNode.IF_STMT:
@@ -65,8 +68,9 @@ public class Sematics {
             case TreeNode.ASSIGN_STMT:
                 analyseAssignStmt();
         }
-        level--;
+        currNode = currNode.getParentNode();
     }
+
     public void analyseIfStmt(){//if (condition) {stmt-sequence} else-stmt
         level++;
         currNode = currNode.getChildren().get(2);//condition
@@ -84,16 +88,19 @@ public class Sematics {
                 currNode = currNode.getParentNode();//if-stmt
             }
         }
+        simbolTabble.deleteInsideRecord(level);
         level--;
     }
+
     public void analyseElseStmt(){//else{stmt-sequence}
         level++;
         currNode = currNode.getChildren().get(2);//stmt-sequence
         analyseStmtSequence();
         currNode = currNode.getParentNode();//else-stmt
+        simbolTabble.deleteInsideRecord(level);
         level--;
-
     }
+
     public void analyseWhileStmt(){//while(condition){stmt-sequence}
         level++;
         currNode = currNode.getChildren().get(2);//condition
@@ -105,6 +112,7 @@ public class Sematics {
             currNode = currNode.getChildren().get(2);//condition
         }
         currNode = currNode.getParentNode();//while-stmt
+        simbolTabble.deleteInsideRecord(level);
         level--;
     }
 
@@ -253,8 +261,12 @@ public class Sematics {
         level++;
         currNode = currNode.getChildren().get(0);//expression(1)
         double leftExp = analyseExpression();
+        currNode = currNode.getParentNode();//condition
+
         currNode = currNode.getChildren().get(1);//comparison-op
         int operation = analyseComparisonOp();
+        currNode = currNode.getParentNode();//condition
+
         currNode = currNode.getChildren().get(2);//expression(2)
         double rightExp = analyseExpression();
         currNode = currNode.getParentNode();
@@ -373,6 +385,7 @@ public class Sematics {
         currNode = currNode.getChildren().get(0);//identifier
         Record var =  simbolTabble.getRecordByName(currNode.getValue().getStrValue());
         if (var == null){
+            currNode = currNode.getParentNode();//variable
             return null;
         }
         currNode = currNode.getParentNode();//variable
