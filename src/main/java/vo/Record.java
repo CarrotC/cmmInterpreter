@@ -10,7 +10,7 @@ public class Record {
     private int intValue;//int类型数据的值
     private double realValue;//real类型数据的值
     private int arrayNum;//数组类型数据的大小
-    private int arrayIndex;//数组下标
+    private Integer arrayIndex;//数组下标,为赋值时为空
     private int[] intArray;//int类型数组
     private double[] realArray;//real类型数组
 
@@ -122,11 +122,11 @@ public class Record {
         this.arrayNum = arrayNum;
     }
 
-    public int getArrayIndex() {
+    public Integer getArrayIndex() {
         return arrayIndex;
     }
 
-    public void setArrayIndex(int arrayIndex) {
+    public void setArrayIndex(Integer arrayIndex) {
         this.arrayIndex = arrayIndex;
     }
 }

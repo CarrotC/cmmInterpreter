@@ -1,5 +1,6 @@
 package interpreter;
 
+import com.sun.org.apache.regexp.internal.RE;
 import vo.Record;
 import vo.SimbolTabble;
 import vo.Token;
@@ -110,7 +111,7 @@ public class Sematics {
     public void analyseReadStmt(){//read variable;
         currNode = currNode.getChildren().get(1);//variable
         Record var = analyseVariable();
-        if(var.equals(null)){//如果该变量没有被声明过//, currNode.getChildren().get(0): variable->idetifier arrayIndex, identifier是终结点，有token
+        if(var == null){//如果该变量没有被声明过//, currNode.getChildren().get(0): variable->idetifier arrayIndex, identifier是终结点，有token
             String name =  currNode.getChildren().get(0).getValue().getStrValue();
             Record record = new Record(level, null, Record.tReal,name, 0.0);
             simbolTabble.getTable().add(record);
@@ -135,7 +136,7 @@ public class Sematics {
     public void analyseIntStmt(){//int variable int-follow
         currNode = currNode.getChildren().get(1);//vaiable
         Record var = analyseVariable();
-        if(var.equals(null)){//如果该变量未声明过
+        if(var == null){//如果该变量未声明过
             String name =  currNode.getChildren().get(0).getValue().getStrValue();
             if(currNode.getChildren().size() == 1){//variable: identifier
                 var = new Record(level, currNode.getValue(), Record.tInt, name, 0);
@@ -162,8 +163,8 @@ public class Sematics {
             Record record = simbolTabble.getRecordByName(name);
             if (record.getType() == Record.tIntArray){//数组
                 errorInfo += "错误的数组声明方式： line " + currNode.getChildren().get(0).getValue().getLine()
-                        + ", column " + currNode.getChildren().get(0).getValue().getColumn()
-                        + " " + record.getName() + "[" + record.getArrayNum() + "] = " + "\n";
+                        + ", column " + (currNode.getChildren().get(0).getValue().getColumn() - 1)
+                        + " int" + record.getName() + "[" + record.getArrayNum() + "] = " + "\n";
                 return;
             }
             currNode = currNode.getChildren().get(1);//expression
@@ -176,9 +177,14 @@ public class Sematics {
     public void analyseRealStmt(){//real variable real-follow
         currNode = currNode.getChildren().get(1);//variable
         Record var = analyseVariable();
-        if(var.equals(null)){//变量未被声明过
+        if(var == null){//变量未被声明过
             String name =  currNode.getChildren().get(0).getValue().getStrValue();
-            var = new Record(level, null, Record.tReal, name, 0.0);
+            if(currNode.getChildren().size() == 1){//普通int变量
+                var = new Record(level, null, Record.tReal, name, 0.0);
+            }else{//数组变量
+                int arrayNum = Integer.parseInt(currNode.getChildren().get(1).getChildren().get(1).getValue().getStrValue());
+                var = new Record(level, null, Record.tRealArray, name, new int[arrayNum]);
+            }
             simbolTabble.getTable().add(var);
             currNode = currNode.getParentNode();//real-stmt
             analyseRealFollowStmt(name);
@@ -192,9 +198,15 @@ public class Sematics {
 
     public void analyseRealFollowStmt(String name){//;或=expression;
         if(currNode.getChildren().size() > 1){//=expression;
+            Record record = simbolTabble.getRecordByName(name);
+            if (record.getType() == Record.tRealArray){//数组不能直接定义值
+                errorInfo+= "错误的数组声明方式：line" + currNode.getChildren().get(0).getValue().getLine()
+                        + ", column " + (currNode.getChildren().get(0).getValue().getColumn() - 1)
+                        + " real" + record.getName() + "[" + record.getArrayNum() + "] = \n";
+
+            }
             currNode = currNode.getChildren().get(1);//expression
             double realVar = analyseExpression();
-            Record record = simbolTabble.getRecordByName(name);
             record.setRealValue(realVar);
             currNode = currNode.getParentNode();//realFollow
         }
@@ -202,22 +214,48 @@ public class Sematics {
     public void analyseAssignStmt(){//variable = expression;
         currNode = currNode.getChildren().get(0);//variable
         Record var = analyseVariable();
-        if (var.equals(null)){//变量未声明
+        if (var == null){//变量未声明
             errorInfo += "未声明的变量： line " + currNode.getChildren().get(0).getValue().getLine()
                     + ", column " + currNode.getChildren().get(0).getValue().getColumn()
                     + " " + currNode.getChildren().get(0).getValue().getStrValue() + "\n";
             currNode = currNode.getParentNode();//assign-stmt
         }else {
+            double exp = analyseExpression();
             if(currNode.getChildren().size() > 1){//variable: identifier arrayIndex
                 int arrayType = var.getType();
-                double exp = analyseExpression();
-                if(arrayType == Record.tIntArray){
-
+                if(arrayType == Record.tIntArray || arrayType == Record.tRealArray){
+                    if (var.getArrayIndex() >= var.getArrayNum()){//数组越界
+                        errorInfo += "数组越界： line "+ currNode.getChildren().get(0).getValue().getLine()
+                                + var.getName() + "[" + var.getArrayIndex() + "] in array " + var.getName() +"[" + var.getArrayNum() +"]\n";
+                        currNode = currNode.getParentNode();//assign-stmt
+                        return;
+                    }
+                    if (arrayType == Record.tIntArray){
+                        var.setIntValue((int) exp);
+                    }else {
+                        var.setRealValue(exp);
+                    }
+                }else {//普通变量但是有数组下标
+                    errorInfo += "错误的变量使用方式：变量" + var.getArrayNum() + "不是数组\n";
+                    currNode = currNode.getParentNode();//assign-stmt
+                    return;
+                }
+            }else {//variable: identifier
+                if(var.getType() == Record.tIntArray || var.getType() == Record.tRealArray){//如果为数组变量且没有数组下标
+                    errorInfo += "错误的数组赋值方式： line" + currNode.getChildren().get(0).getValue().getLine() + "\n";
+                    currNode = currNode.getParentNode();//assign-stmt
+                    return;
+                }
+                if (var.getType() == Record.tInt){
+                    var.setIntValue((int) exp);
+                }else {
+                    var.setRealValue(exp);
                 }
             }
         }
-
+        currNode = currNode.getParentNode();//assign-stmt
     }
+
     public boolean analyseCondition(){
         level++;
         currNode = currNode.getChildren().get(0);
