@@ -211,7 +211,11 @@ public class Sematics {
             currNode = currNode.getParentNode();//realFollow
         }
     }
+
     public void analyseAssignStmt(){//variable = expression;
+        currNode = currNode.getChildren().get(2);//expression
+        double exp = analyseExpression();
+        currNode = currNode.getParentNode();
         currNode = currNode.getChildren().get(0);//variable
         Record var = analyseVariable();
         if (var == null){//变量未声明
@@ -220,25 +224,14 @@ public class Sematics {
                     + " " + currNode.getChildren().get(0).getValue().getStrValue() + "\n";
             currNode = currNode.getParentNode();//assign-stmt
         }else {
-            double exp = analyseExpression();
             if(currNode.getChildren().size() > 1){//variable: identifier arrayIndex
                 int arrayType = var.getType();
                 if(arrayType == Record.tIntArray || arrayType == Record.tRealArray){
-                    if (var.getArrayIndex() >= var.getArrayNum()){//数组越界
-                        errorInfo += "数组越界： line "+ currNode.getChildren().get(0).getValue().getLine()
-                                + var.getName() + "[" + var.getArrayIndex() + "] in array " + var.getName() +"[" + var.getArrayNum() +"]\n";
-                        currNode = currNode.getParentNode();//assign-stmt
-                        return;
-                    }
                     if (arrayType == Record.tIntArray){
                         var.setIntValue((int) exp);
                     }else {
                         var.setRealValue(exp);
                     }
-                }else {//普通变量但是有数组下标
-                    errorInfo += "错误的变量使用方式：变量" + var.getArrayNum() + "不是数组\n";
-                    currNode = currNode.getParentNode();//assign-stmt
-                    return;
                 }
             }else {//variable: identifier
                 if(var.getType() == Record.tIntArray || var.getType() == Record.tRealArray){//如果为数组变量且没有数组下标
@@ -256,13 +249,13 @@ public class Sematics {
         currNode = currNode.getParentNode();//assign-stmt
     }
 
-    public boolean analyseCondition(){
+    public boolean analyseCondition(){//expression comparison-op expresion
         level++;
-        currNode = currNode.getChildren().get(0);
+        currNode = currNode.getChildren().get(0);//expression(1)
         double leftExp = analyseExpression();
-        currNode = currNode.getChildren().get(1);
+        currNode = currNode.getChildren().get(1);//comparison-op
         int operation = analyseComparisonOp();
-        currNode = currNode.getChildren().get(2);
+        currNode = currNode.getChildren().get(2);//expression(2)
         double rightExp = analyseExpression();
         currNode = currNode.getParentNode();
         level--;
@@ -277,33 +270,127 @@ public class Sematics {
                 return false;
         }
     }
-    public int analyseComparisonOp(){
-        return 0;
+    public int analyseComparisonOp(){// < 或 <> 或 ==
+        return currNode.getChildren().get(0).getValue().getType();
     }
-    public double analyseExpression(){
-        return 0;
+    public double analyseExpression(){//term and-term
+        currNode = currNode.getChildren().get(0);//term
+        double exp;
+        double term = analyseTerm();
+        exp = term;
+        currNode = currNode.getParentNode();//expression
+        if(currNode.getChildren().size() > 1){//and-term 不为空
+            exp = analyseAddTerm(term);
+        }
+        return exp;
     }
-    public void analyseAddTerm(){
+    public double analyseAddTerm(double term){//addop term and-term （注：and-term可能为空）
+        double changedTerm;
+        currNode = currNode.getChildren().get(0);//addop
+        int addOpType = analyseAddOp();
+        currNode = currNode.getParentNode();//addTerm
+        currNode = currNode.getChildren().get(1);//term
+        double term2 = analyseTerm();
+        if (addOpType == Token.ADD){
+            changedTerm = term + term2;
+        }else {
+            changedTerm = term - term2;
+        }
+        currNode = currNode.getParentNode();
+        if (currNode.getChildren().size() > 2){
+            changedTerm = analyseAddTerm(changedTerm);
+        }
+        return changedTerm;
+    }
+    public int analyseAddOp(){
+        return currNode.getChildren().get(0).getValue().getType();
+    }
+
+    public double analyseTerm(){//factor with-factor （注：with-factor可能为空）
+        double term;
+        currNode = currNode.getChildren().get(0);//factor
+        double factor = analyseFactor();
+        term = factor;
+        currNode = currNode.getParentNode();//term
+        if(currNode.getChildren().size() > 1){//with-factor不为空
+            term = analyseWithFactor(factor);
+        }
+        return term;
+    }
+    public double analyseWithFactor(double factor){//mulop factor with-factor
+        double changedFactor = 0;
+        currNode = currNode.getChildren().get(0);
+        int mulOpType = analyseMulOp();
+        currNode = currNode.getParentNode();//withFactor
+        currNode = currNode.getChildren().get(1);//factor
+        double factor2 = analyseFactor();
+        currNode = currNode.getParentNode();//withFactor()
+        if(mulOpType == Token.MULTIPLY){
+            changedFactor = factor * factor2;
+        }else {
+            if(factor2 == 0){
+                errorInfo += "计算错误： line" + currNode.getChildren().get(0).getChildren().get(0).getValue().getLine()
+                        + "除数不能为0！\n";
+            }else {
+                changedFactor = factor / factor2;
+            }
+        }
+
+        if (currNode.getChildren().size() > 2){
+            changedFactor = analyseWithFactor(changedFactor);
+        }
+        return changedFactor;
 
     }
-    public void analyseAddOp(){
 
+    public int analyseMulOp(){
+        return currNode.getChildren().get(0).getValue().getType();
     }
-    public void analyseTerm(){
-
-    }
-    public void analyseWithFactor(){
-
-    }
-    public void analyseMulOp(){
-
-    }
-    public double analyseFactor(){
+    public double analyseFactor(){// (expression) 或 intNum 或 realNum 或 variable
+        double factor;
+        currNode = currNode.getChildren().get(0);//第一个子节点
+        if(currNode.getType() == TreeNode.TERMINAL_SYMBOL){//终结符
+            currNode = currNode.getParentNode();//factor
+            if(currNode.getChildren().get(0).getValue().getType() == Token.LEFT_PARENTHESE){
+                currNode = currNode.getChildren().get(1);//exp
+                factor = analyseExpression();
+                currNode = currNode.getParentNode();  //factor
+            }else {
+                factor = Double.parseDouble(currNode.getChildren().get(0).getValue().getStrValue());
+            }
+        }else {
+            Record var = analyseVariable();
+            if(var == null){
+                errorInfo += "未声明的变量： line " + currNode.getChildren().get(0).getValue().getLine()
+                        + " " + var.getName() + "\n";
+            }else {
+                factor = var.getValue();
+            }
+        }
         return 0.0;
     }
-    public Record analyseVariable(){//identifier arrayIndex
-        currNode = currNode.getChildren().get(0);//identifier??
-        return simbolTabble.getRecordByName(currNode.getValue().getStrValue());
+    public Record analyseVariable(){//identifier arrayIndex （注： arrayIndex可能为空）
+        currNode = currNode.getChildren().get(0);//identifier
+        Record var =  simbolTabble.getRecordByName(currNode.getValue().getStrValue());
+        if (var == null){
+            return null;
+        }
+        currNode = currNode.getParentNode();//variable
+        if(currNode.getChildren().size() > 1){//arrayIndex不为空
+            int arrayIndex = Integer.parseInt(currNode.getChildren().get(1).getValue().getStrValue());
+            if(var.getType() == Record.tIntArray || var.getType() == Record.tRealArray){
+                var.setArrayIndex(arrayIndex);
+                if(arrayIndex >= var.getArrayNum()){
+                    errorInfo += "数组越界: line" + currNode.getChildren().get(0).getValue().getLine()
+                            + " " + var.getName() + "[" + var.getArrayIndex() + "] in array " + var.getName() +"[" + var.getArrayNum() +"]\n";
+                    return null;
+                }
+            }else {//普通变量但是有下标
+                errorInfo += "错误的变量使用方式：变量" + var.getArrayNum() + "不是数组\n";
+                return null;
+            }
+        }
+        return var;
     }
 
 }

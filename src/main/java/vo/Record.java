@@ -44,6 +44,22 @@ public class Record {
         this.arrayNum = realArray.length;
     }
 
+    public double getValue(){
+        if(this.getType() == Record.tInt){
+            return this.intValue;
+        }
+        if (this.getType() == Record.tReal){
+            return this.realValue;
+        }
+        if (this.getType() == Record.tIntArray){
+            return intArray[this.getArrayIndex()];
+        }
+        if (this.getType() == Record.tRealArray){
+            return this.realArray[this.arrayIndex];
+        }
+        return 0;
+    }
+
 
     public static int tInt = 0;
     public static int tReal = 1;
